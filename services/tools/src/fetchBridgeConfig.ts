@@ -1,12 +1,17 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { createPublicClient, erc20Abi, getAddress, http, parseAbi } from 'viem';
+
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const serviceDir = resolve(moduleDir, '..');
+const repoRoot = resolve(serviceDir, '../..');
 
 if (process.env.ENV_FILE) {
   dotenv.config({ path: process.env.ENV_FILE, override: true });
 } else {
-  dotenv.config({ path: resolve(process.cwd(), '../../.env') });
+  dotenv.config({ path: resolve(repoRoot, '.env') });
 }
 
 const envContractsPath = process.env.CONTRACTS_JSON_PATH?.trim();
@@ -14,9 +19,9 @@ const envSupportedPath = process.env.SUPPORTED_ERC20_JSON_PATH?.trim();
 const envOutPath = process.env.BRIDGE_CONFIG_JSON_PATH?.trim();
 
 const contractsPath = envContractsPath
-  || resolve(process.cwd(), `../../contracts/deployments/${Number(process.env.L1_CHAIN_ID ?? 11155111)}.json`);
-const supportedPath = envSupportedPath || resolve(process.cwd(), '../../infra/supported-erc20.json');
-const outPath = envOutPath || resolve(process.cwd(), '../../infra/bridge-config.json');
+  || resolve(repoRoot, `contracts/deployments/${Number(process.env.L1_CHAIN_ID ?? 11155111)}.json`);
+const supportedPath = envSupportedPath || resolve(repoRoot, 'infra/supported-erc20.json');
+const outPath = envOutPath || resolve(repoRoot, 'infra/bridge-config.json');
 const autoRegister = process.env.AUTO_REGISTER_TOKENS === '1';
 
 const cfg = JSON.parse(readFileSync(contractsPath, 'utf8')) as any;

@@ -5,6 +5,8 @@
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev:backend": "pnpm --parallel --filter resolver --filter relayer-l1 --filter relayer-l2 dev",
+    "build:backend": "pnpm -r --filter @prividium-poc/types --filter @prividium-poc/config --filter resolver --filter relayer-l1 --filter relayer-l2 run build",
+    "start:backend": "pnpm --parallel --filter resolver --filter relayer-l1 --filter relayer-l2 start",
     "bootstrap:local": "CONTRACTS_L1_NETWORK=localhost pnpm --filter contracts run deploy && CONTRACTS_L1_NETWORK=localhost pnpm --filter contracts run fetch-bridge-deps && CONTRACTS_L1_NETWORK=localhost pnpm --filter contracts run ensure-token && CONTRACTS_L1_NETWORK=localhost pnpm --filter tools run fetch-bridge-config",
     "bootstrap:testnet": "CONTRACTS_L1_NETWORK=sepolia pnpm --filter contracts run deploy && CONTRACTS_L1_NETWORK=sepolia pnpm --filter contracts run fetch-bridge-deps && CONTRACTS_L1_NETWORK=sepolia pnpm --filter contracts run ensure-token && CONTRACTS_L1_NETWORK=sepolia pnpm --filter tools run fetch-bridge-config"
   },

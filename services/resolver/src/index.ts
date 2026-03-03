@@ -1,5 +1,6 @@
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -11,18 +12,29 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { openDb } from './db.js';
 import { evaluateAliasExists } from './alias.js';
 
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const serviceDir = resolve(moduleDir, '..');
+const repoRoot = resolve(serviceDir, '../..');
 
 if (process.env.ENV_FILE) {
   dotenv.config({ path: process.env.ENV_FILE, override: true });
 } else {
-  dotenv.config({ path: resolve(process.cwd(), '../../.env') });
+  dotenv.config({ path: resolve(repoRoot, '.env') });
 }
 
 const app = express();
-app.use(cors());
+const corsOrigins = (process.env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((v) => v.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin: corsOrigins.length > 0 ? corsOrigins : process.env.NODE_ENV === 'production' ? false : true
+  })
+);
 app.use(express.json());
 
-const sqlitePath = process.env.SQLITE_PATH ?? resolve(process.cwd(), '../data/poc.db');
+const sqlitePath = process.env.SQLITE_PATH ?? resolve(repoRoot, 'services/data/poc.db');
 const db = openDb(sqlitePath);
 const bridgeConfig = loadBridgeConfig();
 
@@ -164,4 +176,6 @@ app.get('/alias/deposits', (req, res) => {
   res.json(rows.map((r) => ({ ...r, events: eventsStmt.all(r.trackingId) })));
 });
 
-app.listen(Number(process.env.RESOLVER_PORT ?? 4000), () => console.log('resolver listening'));
+const resolverPort = Number(process.env.RESOLVER_PORT ?? 4000);
+const resolverHost = process.env.RESOLVER_HOST ?? '0.0.0.0';
+app.listen(resolverPort, resolverHost, () => console.log(`resolver listening on ${resolverHost}:${resolverPort}`));

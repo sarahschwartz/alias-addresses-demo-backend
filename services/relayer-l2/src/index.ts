@@ -1,6 +1,6 @@
-import { resolve } from 'node:path';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import dotenv from 'dotenv';
 import { FORWARDER_FACTORY_L1_ABI, ONE_WAY_VAULT_ABI, STEALTH_FORWARDER_L1_ABI, VAULT_FACTORY_ABI } from '@prividium-poc/types';
@@ -8,10 +8,14 @@ import { loadBridgeConfig } from '@prividium-poc/config';
 import { createPublicClient, createWalletClient, erc20Abi, getAddress, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const serviceDir = resolve(moduleDir, '..');
+const repoRoot = resolve(serviceDir, '../..');
+
 if (process.env.ENV_FILE) {
   dotenv.config({ path: process.env.ENV_FILE, override: true });
 } else {
-  dotenv.config({ path: resolve(process.cwd(), '../../.env') });
+  dotenv.config({ path: resolve(repoRoot, '.env') });
 }
 
 const pk = process.env.RELAYER_L2_PRIVATE_KEY;
@@ -21,7 +25,7 @@ if (!pk || !rpc) throw new Error('RELAYER_L2_PRIVATE_KEY and L2_RPC_URL required
 const transport = http(rpc);
 const publicClient = createPublicClient({ transport });
 const walletClient = createWalletClient({ transport, account: privateKeyToAccount(pk as `0x${string}`) });
-const sqlitePath = process.env.SQLITE_PATH ?? resolve(process.cwd(), '../data/poc.db');
+const sqlitePath = process.env.SQLITE_PATH ?? resolve(repoRoot, 'services/data/poc.db');
 mkdirSync(dirname(sqlitePath), { recursive: true });
 const db = new Database(sqlitePath);
 db.pragma('busy_timeout = 5000');

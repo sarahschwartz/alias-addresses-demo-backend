@@ -1,6 +1,6 @@
-import { resolve } from 'node:path';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import dotenv from 'dotenv';
 import { FORWARDER_FACTORY_L1_ABI, STEALTH_FORWARDER_L1_ABI } from '@prividium-poc/types';
@@ -9,17 +9,21 @@ import { createPublicClient, createWalletClient, erc20Abi, getAddress, http } fr
 import { privateKeyToAccount } from 'viem/accounts';
 import { computeNextAttemptAt, loadSupportedTokens, toTokenAllowlist, tryAcquireInflight } from './lib.js';
 
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const serviceDir = resolve(moduleDir, '..');
+const repoRoot = resolve(serviceDir, '../..');
+
 if (process.env.ENV_FILE) {
   dotenv.config({ path: process.env.ENV_FILE, override: true });
 } else {
-  dotenv.config({ path: resolve(process.cwd(), '../../.env') });
+  dotenv.config({ path: resolve(repoRoot, '.env') });
 }
 const pk = process.env.RELAYER_L1_PRIVATE_KEY;
 const rpc = process.env.L1_RPC_URL;
 if (!pk || !rpc) throw new Error('RELAYER_L1_PRIVATE_KEY and L1_RPC_URL required');
 
 const bridgeConfig = loadBridgeConfig();
-const sqlitePath = process.env.SQLITE_PATH ?? resolve(process.cwd(), '../data/poc.db');
+const sqlitePath = process.env.SQLITE_PATH ?? resolve(repoRoot, 'services/data/poc.db');
 mkdirSync(dirname(sqlitePath), { recursive: true });
 const db = new Database(sqlitePath);
 db.pragma('busy_timeout = 5000');
@@ -74,7 +78,7 @@ db.exec(`
     createdAt INTEGER NOT NULL
   );
 `);
-const supportedTokens = loadSupportedTokens(process.env.BRIDGE_CONFIG_JSON_PATH ?? resolve(process.cwd(), '../../infra/bridge-config.json'));
+const supportedTokens = loadSupportedTokens(process.env.BRIDGE_CONFIG_JSON_PATH ?? resolve(repoRoot, 'infra/bridge-config.json'));
 const tokenAllowlist = toTokenAllowlist(supportedTokens);
 const account = privateKeyToAccount(pk as `0x${string}`);
 const publicClient = createPublicClient({ transport: http(rpc) });

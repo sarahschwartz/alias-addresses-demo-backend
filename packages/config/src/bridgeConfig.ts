@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getAddress } from 'viem';
 
 export type BridgeTokenConfig = {
@@ -27,8 +28,12 @@ export type BridgeConfig = {
   tokens: BridgeTokenConfig[];
 };
 
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const packageDir = resolve(moduleDir, '..');
+const repoRoot = resolve(packageDir, '../..');
+
 export function resolveBridgeConfigPath(): string {
-  return process.env.BRIDGE_CONFIG_JSON_PATH ?? resolve(process.cwd(), '../../infra/bridge-config.json');
+  return process.env.BRIDGE_CONFIG_JSON_PATH ?? resolve(repoRoot, 'infra/bridge-config.json');
 }
 
 export function loadBridgeConfig(path = resolveBridgeConfigPath()): BridgeConfig {
