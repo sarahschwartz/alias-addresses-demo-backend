@@ -1,0 +1,15 @@
+{
+  "l1": {
+    "chainId": 11155111,
+    "forwarderFactory": "0xaDc92E245cdee15981EDEc2100afdbfB04336eC3",
+    "bridgehub": "0xc4fd2580c3487bba18d63f50301020132342fdbd"
+  },
+  "l2": {
+    "chainId": 8022833,
+    "forwarderFactory": "0xaDc92E245cdee15981EDEc2100afdbfB04336eC3",
+    "vaultFactory": "0x8c6210499d85ea0913b7aab3c1dc8e7bc2780f12"
+  },
+  "assetRouter": "0xB5d9C3F41E434b91295BD7962db5c873cEcCE2be",
+  "nativeTokenVault": "0xF8d4A5195737043f45F998539D5C62Eee02E3426",
+  "deployedAt": "2026-03-02T20:18:23.485Z"
+}

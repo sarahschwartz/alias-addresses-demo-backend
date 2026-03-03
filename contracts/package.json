@@ -1,0 +1,29 @@
+{
+  "name": "contracts",
+  "private": true,
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run script/deploy.ts --network ${CONTRACTS_L1_NETWORK:-sepolia}",
+    "deploy:local": "hardhat run script/deploy.ts --network localhost",
+    "deploy:testnet": "hardhat run script/deploy.ts --network sepolia",
+    "fetch-bridge-deps": "hardhat run script/fetchBridgeDeps.ts --network ${CONTRACTS_L1_NETWORK:-sepolia}",
+    "fetch-bridge-deps:local": "hardhat run script/fetchBridgeDeps.ts --network localhost",
+    "fetch-bridge-deps:testnet": "hardhat run script/fetchBridgeDeps.ts --network sepolia",
+    "ensure-token": "hardhat run script/ensureSupportedErc20.ts --network ${CONTRACTS_L1_NETWORK:-sepolia}",
+    "ensure-token:local": "hardhat run script/ensureSupportedErc20.ts --network localhost",
+    "ensure-token:testnet": "hardhat run script/ensureSupportedErc20.ts --network sepolia",
+    "get-bridgehub": "hardhat run script/get-bridgehub-address.ts"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "hardhat": "^2.22.18",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@matterlabs/zksync-js": "^0.0.10",
+    "@openzeppelin/contracts": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "viem": "^2.21.53"
+  }
+}

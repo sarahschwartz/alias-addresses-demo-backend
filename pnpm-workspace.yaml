@@ -1,0 +1,11 @@
+packages:
+  - services/resolver
+  - services/relayer-l1
+  - services/relayer-l2
+  - services/tools
+  - packages/config
+  - packages/types
+  - contracts
+
+onlyBuiltDependencies:
+  - better-sqlite3

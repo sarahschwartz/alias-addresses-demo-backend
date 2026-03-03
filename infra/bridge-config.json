@@ -1,0 +1,24 @@
+{
+  "l1": {
+    "chainId": 11155111,
+    "bridgehub": "0xc4FD2580C3487bba18D63f50301020132342fdbD",
+    "assetRouter": "0xB5d9C3F41E434b91295BD7962db5c873cEcCE2be",
+    "nativeTokenVault": "0xF8d4A5195737043f45F998539D5C62Eee02E3426",
+    "forwarderFactory": "0xaDc92E245cdee15981EDEc2100afdbfB04336eC3"
+  },
+  "l2": {
+    "chainId": 8022833,
+    "vaultFactory": "0x8C6210499d85EA0913b7aAb3C1DC8E7bc2780f12",
+    "rpcUrl": "https://zksync-os-testnet-alpha.zksync.dev/"
+  },
+  "tokens": [
+    {
+      "l1Address": "0x76916D4A31efFD4848C220D2F6BD66D56514386f",
+      "symbol": "MOCK",
+      "name": "Mock",
+      "decimals": 18,
+      "assetId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "l2Address": "0x0000000000000000000000000000000000000000"
+    }
+  ]
+}

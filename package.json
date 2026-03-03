@@ -1,0 +1,14 @@
+{
+  "name": "prividium-addresses",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.13.1",
+  "scripts": {
+    "dev:backend": "pnpm --parallel --filter resolver --filter relayer-l1 --filter relayer-l2 dev",
+    "bootstrap:local": "CONTRACTS_L1_NETWORK=localhost pnpm --filter contracts run deploy && CONTRACTS_L1_NETWORK=localhost pnpm --filter contracts run fetch-bridge-deps && CONTRACTS_L1_NETWORK=localhost pnpm --filter contracts run ensure-token && CONTRACTS_L1_NETWORK=localhost pnpm --filter tools run fetch-bridge-config",
+    "bootstrap:testnet": "CONTRACTS_L1_NETWORK=sepolia pnpm --filter contracts run deploy && CONTRACTS_L1_NETWORK=sepolia pnpm --filter contracts run fetch-bridge-deps && CONTRACTS_L1_NETWORK=sepolia pnpm --filter contracts run ensure-token && CONTRACTS_L1_NETWORK=sepolia pnpm --filter tools run fetch-bridge-config"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
