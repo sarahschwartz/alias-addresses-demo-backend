@@ -163,20 +163,12 @@ async function processDeposit(row: any) {
     const ethBal = await publicClient.getBalance({ address: y });
     let erc20Candidate: { tokenAddr: `0x${string}`; bal: bigint } | null = null;
     if (ethBal === 0n) {
-      const contracts = supportedTokens
-        .map((token) => getAddress(token.l1Address))
-        .filter((tokenAddr) => tokenAllowlist.has(tokenAddr.toLowerCase()))
-        .map((tokenAddr) => ({
-          address: tokenAddr,
-          abi: erc20Abi,
-          functionName: 'balanceOf' as const,
-          args: [y] as const
-        }));
-      const results = await publicClient.multicall({ contracts, allowFailure: true });
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i];
-        if (result.status !== 'success' || result.result === 0n) continue;
-        erc20Candidate = { tokenAddr: contracts[i]!.address, bal: result.result };
+      for (const token of supportedTokens) {
+        const tokenAddr = getAddress(token.l1Address);
+        if (!tokenAllowlist.has(tokenAddr.toLowerCase())) continue;
+        const bal = (await publicClient.readContract({ address: tokenAddr, abi: erc20Abi, functionName: 'balanceOf', args: [y] })) as bigint;
+        if (bal === 0n) continue;
+        erc20Candidate = { tokenAddr, bal };
         break;
       }
     }
