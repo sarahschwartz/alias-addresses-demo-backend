@@ -39,7 +39,7 @@ cp .env.example .env
 Notes:
 - If `L1_ERC20_TOKEN_ADDRESS` is empty, `bootstrap:local` deploys `MockERC20` automatically.
 - Optional path overrides (`ENV_FILE`, `SQLITE_PATH`, `BRIDGE_CONFIG_JSON_PATH`) are supported but not required.
-- Optional L1 failover is supported with `L1_RPC_URL_BACKUP`; runtime services use it if the primary `L1_RPC_URL` fails.
+- Optional L1 failover is supported with `L1_RPC_URL_BACKUP`; runtime services use it if the primary `L1_RPC_URL` fails or returns rate-limit errors. `RPC_RATE_LIMIT_COOLDOWN_MS` controls how long a rate-limited RPC stays deprioritized.
 
 ## Bootstrap Contracts And Bridge Config (Local)
 
