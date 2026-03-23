@@ -7,10 +7,12 @@ type RpcRequest = {
 
 type JsonRpcSuccess = {
   result: unknown;
+  error?: undefined;
 };
 
 type JsonRpcError = {
-  error?: {
+  result?: undefined;
+  error: {
     code?: number;
     message?: string;
   };
@@ -26,6 +28,10 @@ function parseRpcError(payload: JsonRpcError, url: string): never {
   const code = payload.error?.code;
   const message = payload.error?.message ?? 'Unknown JSON-RPC error';
   throw new Error(`RPC error from ${url}: ${code ?? 'unknown'} ${message}`);
+}
+
+function isJsonRpcError(payload: JsonRpcSuccess | JsonRpcError): payload is JsonRpcError {
+  return 'error' in payload && payload.error !== undefined;
 }
 
 async function sendRpc(url: string, body: string) {
@@ -72,7 +78,7 @@ export function createRpcTransport(primaryUrl: string, backupUrl?: string) {
             params: params ?? []
           });
           const result = await sendRpc(url, payload);
-          if ('error' in result && result.error) parseRpcError(result, url);
+          if (isJsonRpcError(result)) parseRpcError(result, url);
           cooldownUntil.delete(url);
           return result.result;
         } catch (error) {
