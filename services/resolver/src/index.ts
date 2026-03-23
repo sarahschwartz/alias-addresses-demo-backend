@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { aliasKeyFromParts, computeSalt, normalizeAlias } from '@prividium-poc/types';
-import { loadBridgeConfig } from '@prividium-poc/config';
+import { createRpcTransport, loadBridgeConfig } from '@prividium-poc/config';
 import { createPublicClient, getAddress, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { openDb } from './db.js';
@@ -38,7 +38,10 @@ const sqlitePath = process.env.SQLITE_PATH ?? resolve(repoRoot, 'services/data/p
 const db = openDb(sqlitePath);
 const bridgeConfig = loadBridgeConfig();
 
-const l1Client = createPublicClient({ chain: undefined, transport: http(process.env.L1_RPC_URL) });
+const l1Client = createPublicClient({
+  chain: undefined,
+  transport: createRpcTransport(String(process.env.L1_RPC_URL ?? ''), process.env.L1_RPC_URL_BACKUP)
+});
 const l2Client = createPublicClient({ chain: undefined, transport: http(process.env.L2_RPC_URL) });
 
 const forwarderFactoryAbi = [{ type: 'function', name: 'computeAddress', stateMutability: 'view', inputs: [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }, { type: 'address' }, { type: 'address' }, { type: 'address' }, { type: 'address' }], outputs: [{ type: 'address' }] }] as const;
