@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import dotenv from 'dotenv';
 import { FORWARDER_FACTORY_L1_ABI, STEALTH_FORWARDER_L1_ABI } from '@prividium-poc/types';
-import { loadBridgeConfig } from '@prividium-poc/config';
-import { createPublicClient, createWalletClient, erc20Abi, getAddress, http } from 'viem';
+import { createRpcTransport, loadBridgeConfig } from '@prividium-poc/config';
+import { createPublicClient, createWalletClient, erc20Abi, getAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { computeNextAttemptAt, loadSupportedTokens, toTokenAllowlist, tryAcquireInflight } from './lib.js';
 
@@ -81,14 +81,20 @@ db.exec(`
 const supportedTokens = loadSupportedTokens(process.env.BRIDGE_CONFIG_JSON_PATH ?? resolve(repoRoot, 'infra/bridge-config.json'));
 const tokenAllowlist = toTokenAllowlist(supportedTokens);
 const account = privateKeyToAccount(pk as `0x${string}`);
-const publicClient = createPublicClient({ transport: http(rpc) });
-const walletClient = createWalletClient({ transport: http(rpc), account });
+const l1Transport = createRpcTransport(rpc, process.env.L1_RPC_URL_BACKUP);
+const publicClient = createPublicClient({ transport: l1Transport });
+const walletClient = createWalletClient({ transport: l1Transport, account });
 
 const defaultMintEth = BigInt(process.env.MINT_VALUE_WEI_ETH_DEFAULT ?? '2000000000000000');
 const defaultMintErc20 = BigInt(process.env.MINT_VALUE_WEI_ERC20_DEFAULT ?? '3000000000000000');
 const maxAttempts = Number(process.env.MAX_ATTEMPTS ?? 5);
 const baseDelaySeconds = Number(process.env.BASE_DELAY_SECONDS ?? 15);
 const maxDelaySeconds = Number(process.env.MAX_DELAY_SECONDS ?? 900);
+const pollMs = Number(process.env.RELAYER_POLL_MS ?? 7000);
+const shortIdlePollMs = Number(process.env.L1_IDLE_POLL_MS_SHORT ?? 15000);
+const mediumIdlePollMs = Number(process.env.L1_IDLE_POLL_MS_MEDIUM ?? 60000);
+const longIdlePollMs = Number(process.env.L1_IDLE_POLL_MS_LONG ?? 300000);
+const staleIdlePollMs = Number(process.env.L1_IDLE_POLL_MS_STALE ?? 900000);
 const defaultRefundRecipient = (() => {
   const explicit = process.env.REFUND_RECIPIENT_L2?.trim();
   if (explicit) return getAddress(explicit);
@@ -96,6 +102,14 @@ const defaultRefundRecipient = (() => {
   if (refundPk) return privateKeyToAccount(refundPk as `0x${string}`).address;
   return null;
 })();
+
+function computeIdlePollMs(createdAt: number, now: number): number {
+  const ageMs = Math.max(0, now - createdAt);
+  if (ageMs < 5 * 60_000) return Math.max(pollMs, shortIdlePollMs);
+  if (ageMs < 60 * 60_000) return Math.max(pollMs, mediumIdlePollMs);
+  if (ageMs < 24 * 60 * 60_000) return Math.max(pollMs, longIdlePollMs);
+  return Math.max(pollMs, staleIdlePollMs);
+}
 
 function createEvent(trackingId: string, kind: 'ETH' | 'ERC20', amount: bigint, token?: string | null) {
   const now = Date.now();
@@ -134,6 +148,9 @@ async function withMintRetry<T>(fn: (mint: bigint) => Promise<T>, base: bigint):
 }
 
 async function processDeposit(row: any) {
+  const now = Date.now();
+  const idlePollMs = computeIdlePollMs(Number(row.createdAt ?? now), now);
+  if (now - Number(row.lastActivityAt ?? 0) < idlePollMs) return;
   if (!tryAcquireInflight(Number(row.inflightL1 ?? 0))) return;
 
   const lock = db.prepare('UPDATE deposit_requests SET inflightL1=1 WHERE trackingId=? AND inflightL1=0').run(row.trackingId);
@@ -146,17 +163,28 @@ async function processDeposit(row: any) {
     const ethBal = await publicClient.getBalance({ address: y });
     let erc20Candidate: { tokenAddr: `0x${string}`; bal: bigint } | null = null;
     if (ethBal === 0n) {
-      for (const token of supportedTokens) {
-        const tokenAddr = getAddress(token.l1Address);
-        if (!tokenAllowlist.has(tokenAddr.toLowerCase())) continue;
-        const bal = (await publicClient.readContract({ address: tokenAddr, abi: erc20Abi, functionName: 'balanceOf', args: [y] })) as bigint;
-        if (bal === 0n) continue;
-        erc20Candidate = { tokenAddr, bal };
+      const contracts = supportedTokens
+        .map((token) => getAddress(token.l1Address))
+        .filter((tokenAddr) => tokenAllowlist.has(tokenAddr.toLowerCase()))
+        .map((tokenAddr) => ({
+          address: tokenAddr,
+          abi: erc20Abi,
+          functionName: 'balanceOf' as const,
+          args: [y] as const
+        }));
+      const results = await publicClient.multicall({ contracts, allowFailure: true });
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        if (result.status !== 'success' || result.result === 0n) continue;
+        erc20Candidate = { tokenAddr: contracts[i]!.address, bal: result.result };
         break;
       }
     }
 
-    if (ethBal === 0n && !erc20Candidate) return;
+    if (ethBal === 0n && !erc20Candidate) {
+      db.prepare('UPDATE deposit_requests SET lastActivityAt=? WHERE trackingId=?').run(now, row.trackingId);
+      return;
+    }
 
     const code = await publicClient.getCode({ address: y });
     let deployTx: `0x${string}` | null = null;

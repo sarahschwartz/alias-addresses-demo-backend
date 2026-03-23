@@ -184,7 +184,7 @@ async function processSubmittedEvent(event: any, request: any, recipient: `0x${s
     db.prepare('UPDATE deposit_events SET status=?, l2DeployVaultTxHash=?, l2DeployTxHash=? WHERE id=?').run('l2_vault_deployed', deployTx, deployTx, event.id);
   }
   db.prepare('UPDATE deposit_events SET status=?, l2SweepXtoRTxHash=?, l2SweepTxHash=? WHERE id=?').run('credited', sweepTx, sweepTx, event.id);
-  db.prepare('UPDATE deposit_requests SET lastActivityAt=? WHERE trackingId=?').run(Date.now(), request.trackingId);
+  db.prepare('UPDATE deposit_requests SET lastActivityAt=?, isActive=0 WHERE trackingId=?').run(Date.now(), request.trackingId);
 }
 
 async function tick() {
