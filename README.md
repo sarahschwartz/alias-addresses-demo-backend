@@ -1,4 +1,4 @@
-# Prividium Addresses Backend
+# Stealth Addresses Backend
 
 Backend for alias registration and cross-chain deposit relaying.
 
